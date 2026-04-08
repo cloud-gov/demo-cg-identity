@@ -14,23 +14,23 @@ var root_url = 'http://localhost:' + PORT + '/'
 var vcap_services = JSON.parse(process.env.VCAP_SERVICES || null);
 var vcap_application = JSON.parse(process.env.VCAP_APPLICATION || null);
 
-if ( vcap_services ) {
-  client_id = vcap_services["cloud-gov-identity-provider"][0].credentials.client_id ;
-  client_secret = vcap_services["cloud-gov-identity-provider"][0].credentials.client_secret ;
+if (vcap_services) {
+  client_id = vcap_services["cloud-gov-identity-provider"][0].credentials.client_id;
+  client_secret = vcap_services["cloud-gov-identity-provider"][0].credentials.client_secret;
 }
 
 if (vcap_application) {
-  root_url =  'https://' + vcap_application["application_uris"][0] + '/'
+  root_url = 'https://' + vcap_application["application_uris"][0] + '/'
 }
 
 const CLIENT_ID = process.env.CLIENT_ID || client_id;
 const CLIENT_SECRET = process.env.CLIENT_SECRET || client_secret;
-const UAA_AUTH_URL = process.env.UAA_AUTH_URL || 
-                     'http://localhost:8080/oauth/authorize';
-const UAA_LOGOUT_URL = process.env.UAA_LOGOUT_URL || 
-                     'http://localhost:8080/logout.do';
+const UAA_AUTH_URL = process.env.UAA_AUTH_URL ||
+  'http://localhost:8080/oauth/authorize';
+const UAA_LOGOUT_URL = process.env.UAA_LOGOUT_URL ||
+  'http://localhost:8080/logout.do';
 const UAA_TOKEN_URL = process.env.UAA_TOKEN_URL ||
-                      'http://localhost:8080/oauth/token';
+  'http://localhost:8080/oauth/token';
 
 // A "real" implementation would create a cryptographically secure
 // random string per session, but we're just a demo app so we'll use
@@ -40,6 +40,8 @@ const UAA_TOKEN_URL = process.env.UAA_TOKEN_URL ||
 //
 // http://www.twobotechnologies.com/blog/2014/02/importance-of-state-in-oauth2.html
 const FAKE_STATE = crypto.randomBytes(64).toString('hex');
+
+const redirectUri = root_url + 'auth/callback'
 
 const app = express();
 
@@ -56,8 +58,9 @@ let session = {};
 function postToTokenUrlAndSetSession(payload, callback) {
   request.post(UAA_TOKEN_URL, {
     form: payload,
-  }, function(err, response, body) {
+  }, function (err, response, body) {
     if (!err && response && response.statusCode !== 200) {
+      console.error(response.body)
       err = new Error(`got HTTP ${response.statusCode}`);
     }
     if (err) {
@@ -118,7 +121,8 @@ function getLoggedOutHtml() {
   const url = UAA_AUTH_URL + '?' + querystring.stringify({
     'client_id': CLIENT_ID,
     'state': FAKE_STATE,
-    'response_type': 'code'
+    'response_type': 'code',
+    'redirect_uri': redirectUri,
   });
   return `<a href="${url}">Log in</a> via <code>${UAA_AUTH_URL}</code>!`;
 }
@@ -147,8 +151,10 @@ app.get('/auth/callback', (req, res) => {
     response_type: 'token',
     client_id: CLIENT_ID,
     client_secret: CLIENT_SECRET,
+    redirect_uri: redirectUri,
   }, (err) => {
     if (err) {
+      console.error(err)
       res.status(400).send(err);
       return;
     }
@@ -162,7 +168,7 @@ app.get('/auth/logout', (req, res) => {
   if (session.email) { // user is authenticated
     const logout_url = UAA_LOGOUT_URL + '?' + querystring.stringify({
       'client_id': CLIENT_ID,
-      'redirect': root_url
+      'redirect_uri': root_url
     });
     session = {};
     res.redirect(logout_url);
