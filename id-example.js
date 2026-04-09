@@ -168,7 +168,7 @@ app.get('/auth/logout', (req, res) => {
   if (session.email) { // user is authenticated
     const logout_url = UAA_LOGOUT_URL + '?' + querystring.stringify({
       'client_id': CLIENT_ID,
-      'redirect_uri': root_url
+      'post_logout_redirect_uri': root_url
     });
     session = {};
     res.redirect(logout_url);
