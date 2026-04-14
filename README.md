@@ -30,7 +30,7 @@ Then, create an identity provider service, and bind that service to our app with
 cf create-service cloud-gov-identity-provider oauth-client uaa-id-example
 sleep 15 # it takes a moment to provision the oauth-client
 cf bind-service id-example uaa-id-example \
-  -c '{"redirect_uri": ["https://'$app_route'/auth/callback"]}'
+  -c '{"redirect_uri": ["https://'$app_route'/", "https://'$app_route'/auth/callback"]}'
 ```
 
 Pass the environment variables for the UAA URLs to the application, and start the app:
@@ -53,7 +53,8 @@ Your access token lasts for another 598 seconds, but will be renewed automatical
 You can also logout.
 ```
 
-The `logout` link will clear the session in your app, and also redirect you to the cloud.gov `/logout.do` to clear your sessions in UAA.
+The `logout` link will clear the session in your app, redirect you to the cloud.gov `/logout.do` to clear your sessions in UAA, then redirect you back
+to the homepage of your app.
 
 ### Cleaning Up the Example Client
 
